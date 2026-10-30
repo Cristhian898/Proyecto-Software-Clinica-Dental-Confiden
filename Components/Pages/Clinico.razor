@@ -1,0 +1,74 @@
+@page "/clinico"
+@attribute [Authorize(Roles = "Odontólogo")]
+@inject IDbContextFactory<AppDb> F
+@inject AuditoriaService Aud
+<h2>Información clínica</h2>
+<div class="mb-3" style="max-width:420px"><label class="form-label">Paciente</label>
+    <select class="form-select" @onchange="Elegir"><option value="">Seleccione…</option>@foreach (var p in pacientes) {<option value="@p.IdPaciente" selected="@(p.IdPaciente == pid)">@p.NombreCompleto</option>}</select></div>
+@if (pid != null)
+{
+    <div class="mb-3"><button class="btn btn-primary" @onclick="() => { h = new(); t = null; }">Registrar consulta</button>
+        <button class="btn btn-outline-primary" @onclick="NuevoTrat">Registrar tratamiento</button></div>
+    @if (h != null)
+    {
+        <EditForm Model="h" OnValidSubmit="GuardarH" class="card card-body mb-3"><DataAnnotationsValidator /><ValidationSummary />
+            <label class="form-label">Motivo de consulta</label><InputTextArea class="form-control" @bind-Value="h.MotivoConsulta" />
+            <label class="form-label mt-2">Diagnóstico</label><InputTextArea class="form-control" @bind-Value="h.Diagnostico" />
+            <label class="form-label mt-2">Observaciones (opcional)</label><InputTextArea class="form-control" @bind-Value="h.Observaciones" />
+            <div class="mt-3"><button class="btn btn-primary">Guardar</button> <button type="button" class="btn btn-outline-secondary" @onclick="() => h = null">Cancelar</button></div></EditForm>
+    }
+    @if (t != null)
+    {
+        <EditForm Model="t" OnValidSubmit="GuardarT" class="card card-body mb-3"><DataAnnotationsValidator /><ValidationSummary />
+            <label class="form-label">Consulta relacionada</label>
+            <InputSelect class="form-select" @bind-Value="t.HistorialId">@foreach (var x in historial) {<option value="@x.Id">@x.FechaCreacion.ToString("dd/MM/yyyy") – @x.MotivoConsulta</option>}</InputSelect>
+            <label class="form-label mt-2">Pieza dental</label><InputText class="form-control" @bind-Value="t.PiezaDental" />
+            <label class="form-label mt-2">Procedimiento</label><InputTextArea class="form-control" @bind-Value="t.DescripcionProcedimiento" />
+            <label class="form-label mt-2">Estado</label><InputSelect class="form-select" @bind-Value="t.EstadoTratamiento">@foreach (var s in Estados.Trat) {<option>@s</option>}</InputSelect>
+            <div class="mt-3"><button class="btn btn-primary">Guardar</button> <button type="button" class="btn btn-outline-secondary" @onclick="() => t = null">Cancelar</button></div></EditForm>
+    }
+    <h4>Historial clínico</h4>
+    <div class="table-responsive"><table class="table table-sm bg-body"><thead><tr><th>Fecha</th><th>Motivo</th><th>Diagnóstico</th><th>Observaciones</th></tr></thead><tbody>
+    @foreach (var x in historial) { <tr><td>@x.FechaCreacion.ToString("dd/MM/yyyy")</td><td>@x.MotivoConsulta</td><td>@x.Diagnostico</td><td>@x.Observaciones</td></tr> }
+    @if (historial.Count == 0) { <tr><td colspan="4" class="text-muted">Sin registros clínicos.</td></tr> }</tbody></table></div>
+    <h4 class="mt-4">Tratamientos</h4>
+    <div class="table-responsive"><table class="table table-sm bg-body"><thead><tr><th>Pieza</th><th>Procedimiento</th><th>Estado</th><th></th></tr></thead><tbody>
+    @foreach (var x in tratamientos) { <tr><td>@x.PiezaDental</td><td>@x.DescripcionProcedimiento</td><td>@x.EstadoTratamiento</td>
+        <td>@if (x.EstadoTratamiento != "Finalizado") { <button class="btn btn-sm btn-outline-primary" @onclick="() => Avanzar(x.Id)">Avanzar estado</button> }</td></tr> }
+    @if (tratamientos.Count == 0) { <tr><td colspan="4" class="text-muted">Sin tratamientos.</td></tr> }</tbody></table></div>
+}
+@code {
+    [CascadingParameter] Task<AuthenticationState> Auth { get; set; } = default!;
+    List<Paciente> pacientes = new(); List<HistorialClinico> historial = new(); List<Tratamiento> tratamientos = new();
+    [SupplyParameterFromQuery(Name = "p")] public Guid? P { get; set; }
+    Guid? pid, odId; HistorialClinico? h; Tratamiento? t;
+    protected override async Task OnInitializedAsync()
+    {
+        if (Guid.TryParse((await Auth).User.FindFirst("odId")?.Value, out var g)) odId = g;
+        await using var db = await F.CreateDbContextAsync();
+        pacientes = await db.Pacientes.OrderBy(p => p.NombreCompleto).ToListAsync();
+        if (P != null) { pid = P; await Cargar(); await Mirar(); }
+    }
+    async Task Elegir(ChangeEventArgs a) { pid = Guid.TryParse(a.Value?.ToString(), out var g) ? g : null; h = null; t = null; await Cargar(); if (pid != null) await Mirar(); }
+    async Task Mirar() => await Aud.Registrar((await Auth).User.Identity?.Name ?? "?", "Consultó historial clínico", pid);
+    async Task Cargar()
+    {
+        if (pid == null) return;
+        await using var db = await F.CreateDbContextAsync();
+        historial = await db.Historiales.Where(x => x.PacienteId == pid).OrderByDescending(x => x.FechaCreacion).ToListAsync(); // RF-13: cronológico
+        tratamientos = await db.Tratamientos.Where(x => x.PacienteId == pid).ToListAsync();
+    }
+    void NuevoTrat() { h = null; t = new() { HistorialId = historial.FirstOrDefault()?.Id ?? Guid.Empty }; }
+    async Task GuardarH() { await using var db = await F.CreateDbContextAsync(); h!.PacienteId = pid!.Value; h.OdontologoId = odId; db.Historiales.Add(h); await db.SaveChangesAsync(); h = null; await Cargar(); }
+    async Task GuardarT()
+    {
+        if (t!.HistorialId == Guid.Empty) return; // RD-05: debe tener consulta asociada
+        await using var db = await F.CreateDbContextAsync(); t.PacienteId = pid!.Value; db.Tratamientos.Add(t); await db.SaveChangesAsync(); t = null; await Cargar();
+    }
+    async Task Avanzar(Guid id)
+    {
+        await using var db = await F.CreateDbContextAsync();
+        var x = await db.Tratamientos.FindAsync(id); if (x == null) return;
+        x.EstadoTratamiento = x.EstadoTratamiento == "Planificado" ? "En Proceso" : "Finalizado"; await db.SaveChangesAsync(); await Cargar();
+    }
+}

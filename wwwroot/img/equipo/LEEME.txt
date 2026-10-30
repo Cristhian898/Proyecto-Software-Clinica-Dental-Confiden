@@ -1,0 +1,2 @@
+Foto de cada odontologo: nombre-apellido.jpg (sin Dr./Dra. ni tildes). Ejemplos: carlos-mendoza.jpg, lucia-rivas.jpg
+Si no hay foto, la pagina Equipo muestra las iniciales.

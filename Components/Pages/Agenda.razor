@@ -1,0 +1,103 @@
+@page "/agenda"
+@attribute [Authorize(Roles = "Recepcionista,Odontólogo")]
+@inject IDbContextFactory<AppDb> F
+@inject CitaService Citas
+<h2>Agenda</h2>
+@if (err != null) { <div class="alert alert-danger">@err</div> }
+<div class="d-flex gap-2 align-items-end flex-wrap mb-3">
+    <div><label class="form-label">Fecha</label><input type="date" class="form-control" @bind="filtro" @bind:after="Cargar" /></div>
+    <button class="btn btn-outline-secondary" @onclick="Todas">Ver todas</button>
+    @if (esRecep) { <button class="btn btn-primary" @onclick="Nueva">Nueva cita</button> }
+</div>
+@if (m != null)
+{
+    <EditForm Model="m" OnValidSubmit="Guardar" class="card card-body mb-3">
+        <div class="row g-2">
+            <div class="col-md-4"><label class="form-label">Paciente registrado</label>
+                <InputSelect class="form-select" @bind-Value="m.PacienteId" disabled="@(m.Id != null)">@foreach (var p in pacientes) {<option value="@p.IdPaciente">@p.NombreCompleto</option>}</InputSelect></div>
+            <div class="col-md-4"><label class="form-label">Servicio</label>
+                <InputSelect class="form-select" @bind-Value="m.ServicioId" disabled="@(m.Id != null)">@foreach (var s in servicios) {<option value="@s.IdServicio">@s.NombreServicio</option>}</InputSelect></div>
+            <div class="col-md-4"><label class="form-label">Odontólogo</label>
+                <InputSelect class="form-select" @bind-Value="m.OdontologoId">@foreach (var o in odontologos) {<option value="@o.IdOdontologo">@o.Nombre</option>}</InputSelect></div>
+            <div class="col-md-4"><label class="form-label">Fecha</label><InputDate class="form-control" @bind-Value="m.Fecha" /></div>
+            <div class="col-md-4"><label class="form-label">Hora</label><InputSelect class="form-select" @bind-Value="m.Hora">@foreach (var h in Horario.Horas) {<option>@h</option>}</InputSelect></div>
+            <div class="col-md-4"><label class="form-label">Tipo de atención</label><InputSelect class="form-select" @bind-Value="m.Tipo"><option>Consulta</option><option>Tratamiento</option><option>Control</option><option>Emergencia</option></InputSelect></div>
+        </div>
+        <div class="mt-3"><button class="btn btn-primary">Guardar</button> <button type="button" class="btn btn-outline-secondary" @onclick="() => m = null">Cancelar</button></div>
+    </EditForm>
+}
+<div class="table-responsive"><table class="table table-sm align-middle bg-body">
+    <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Odontólogo</th><th>Servicio</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var c in citas)
+    {
+        <tr><td>@c.FechaHora.ToString("dd/MM/yyyy")</td><td>@c.FechaHora.ToString("HH:mm")</td><td>@c.Paciente?.NombreCompleto</td><td>@c.Odontologo?.Nombre</td><td>@c.Servicio?.NombreServicio</td>
+            <td><span class="badge text-bg-@(c.Estado == "Cancelada" ? "danger" : c.Estado == "Solicitada" ? "warning" : "info")">@c.Estado</span></td>
+            <td>
+            @if (c.Estado != "Cancelada" && c.Estado != "Realizada")
+            {
+                @if (esRecep)
+                {
+                    @if (c.Estado == "Solicitada") { <button class="btn btn-sm btn-success" @onclick='() => Estado(c.Id, "Confirmada")'>Confirmar</button> }
+                    <button class="btn btn-sm btn-outline-primary" @onclick="() => Modificar(c)">Modificar</button>
+                    @if (c.Paciente != null) { <a class="btn btn-sm btn-outline-success" target="_blank" rel="noopener" href="@Wa(c)">WhatsApp</a> }
+                    @if (confirmar == c.Id) { <button class="btn btn-sm btn-danger" @onclick='() => Estado(c.Id, "Cancelada")'>Sí, cancelar</button> }
+                    else { <button class="btn btn-sm btn-outline-danger" @onclick="() => confirmar = c.Id">Cancelar</button> }
+                }
+                else { <button class="btn btn-sm btn-success" @onclick='() => Estado(c.Id, "Realizada")'>Marcar realizada</button> }
+            }
+            </td></tr>
+    }
+    @if (citas.Count == 0) { <tr><td colspan="7" class="text-muted">No hay citas para mostrar.</td></tr> }
+    </tbody></table></div>
+@code {
+    [CascadingParameter] Task<AuthenticationState> Auth { get; set; } = default!;
+    List<Cita> citas = new(); List<Paciente> pacientes = new(); List<Servicio> servicios = new(); List<Odontologo> odontologos = new();
+    DateTime? filtro; Guid? odId, confirmar; bool esRecep; string? err; Form? m;
+    protected override async Task OnInitializedAsync()
+    {
+        var u = (await Auth).User;
+        esRecep = u.IsInRole("Recepcionista");
+        if (Guid.TryParse(u.FindFirst("odId")?.Value, out var g)) odId = g;
+        await using var db = await F.CreateDbContextAsync();
+        pacientes = await db.Pacientes.OrderBy(p => p.NombreCompleto).ToListAsync();
+        servicios = await db.Servicios.OrderBy(s => s.NombreServicio).ToListAsync();
+        odontologos = await db.Odontologos.Where(o => o.Disponible).ToListAsync();
+        await Cargar();
+    }
+    async Task Cargar()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        var q = db.Citas.Include(c => c.Paciente).Include(c => c.Odontologo).Include(c => c.Servicio).AsQueryable();
+        if (filtro != null) { var d = filtro.Value.Date; q = q.Where(c => c.FechaHora >= d && c.FechaHora < d.AddDays(1)); }
+        if (!esRecep && odId != null) q = q.Where(c => c.OdontologoId == odId);
+        citas = await q.OrderBy(c => c.FechaHora).ToListAsync();
+    }
+    static string Wa(Cita c) => DatosClinica.WaPaciente(c.Paciente!.Telefono, $"Hola {c.Paciente.NombreCompleto}, le escribimos de ConfiDent sobre su cita del {c.FechaHora:dd/MM/yyyy} a las {c.FechaHora:HH:mm} ({c.Estado}). ¿Nos confirma su asistencia?");
+    async Task Todas() { filtro = null; await Cargar(); }
+    void Nueva() => m = new Form { PacienteId = pacientes.FirstOrDefault()?.IdPaciente ?? Guid.Empty, ServicioId = servicios.FirstOrDefault()?.IdServicio ?? Guid.Empty, OdontologoId = odontologos.FirstOrDefault()?.IdOdontologo ?? Guid.Empty };
+    void Modificar(Cita c) => m = new Form { Id = c.Id, PacienteId = c.PacienteId, ServicioId = c.ServicioId, OdontologoId = c.OdontologoId, Fecha = c.FechaHora.Date, Hora = c.FechaHora.ToString("HH:mm"), Tipo = c.TipoAtencion };
+    async Task Estado(Guid id, string estado)
+    {
+        await using var db = await F.CreateDbContextAsync();
+        var c = await db.Citas.FindAsync(id); if (c == null) return;
+        c.Estado = estado; await db.SaveChangesAsync(); confirmar = null; await Cargar();
+    }
+    async Task Guardar()
+    {
+        err = null;
+        var fh = m!.Fecha.Date + TimeSpan.Parse(m.Hora);
+        if (fh < DateTime.Now) { err = "La fecha y hora no pueden ser pasadas."; return; }
+        if (!Horario.EsLaborable(fh)) { err = "La clínica atiende de lunes a viernes."; return; }
+        if (!await Citas.EstaLibre(m.OdontologoId, fh, m.Id)) { err = "El odontólogo ya tiene una cita en ese horario."; return; } // RN-01
+        await using var db = await F.CreateDbContextAsync();
+        Cita? c;
+        if (m.Id == null) { c = new Cita { PacienteId = m.PacienteId, ServicioId = m.ServicioId, TipoAtencion = m.Tipo, Estado = "Confirmada" }; db.Citas.Add(c); }
+        else { c = await db.Citas.FindAsync(m.Id.Value); if (c == null) return; c.Estado = "Reprogramada"; }
+        c.OdontologoId = m.OdontologoId; c.FechaHora = fh;
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { err = "El horario fue ocupado por otra cita."; return; }
+        m = null; await Cargar();
+    }
+    class Form { public Guid? Id; public Guid PacienteId, ServicioId, OdontologoId; public DateTime Fecha = DateTime.Today; public string Hora = "08:00", Tipo = "Consulta"; }
+}

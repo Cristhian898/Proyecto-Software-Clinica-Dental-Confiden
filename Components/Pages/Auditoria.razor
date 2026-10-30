@@ -1,0 +1,27 @@
+@page "/auditoria"
+@attribute [Authorize(Roles = "Administrador")]
+@inject IDbContextFactory<AppDb> F
+<h2>Registro de accesos</h2>
+<p class="lead2">Quién entró al sistema y quién consultó información clínica. Apoya el deber de seguridad y confidencialidad de la Ley N.º 787.</p>
+<div class="searchbox"><input class="form-control" placeholder="Filtrar por usuario o acción…" aria-label="Filtrar registros" @bind="q" @bind:event="oninput" /></div>
+<div class="table-responsive"><table class="table table-sm align-middle">
+    <thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Paciente</th></tr></thead><tbody>
+    @foreach (var a in Filtrados)
+    {
+        <tr><td>@a.Fecha.ToString("dd/MM/yyyy HH:mm")</td><td>@a.Usuario</td><td>@a.Accion</td><td>@(a.PacienteId != null && nombres.TryGetValue(a.PacienteId.Value, out var n) ? n : "")</td></tr>
+    }
+    @if (!Filtrados.Any()) { <tr><td colspan="4" class="text-muted">Sin registros.</td></tr> }
+    </tbody></table></div>
+@code {
+    string q = "";
+    List<AccesoAuditoria> lista = new();
+    Dictionary<Guid, string> nombres = new();
+    IEnumerable<AccesoAuditoria> Filtrados => string.IsNullOrWhiteSpace(q) ? lista
+        : lista.Where(a => a.Usuario.Contains(q, StringComparison.OrdinalIgnoreCase) || a.Accion.Contains(q, StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        lista = await db.Accesos.OrderByDescending(a => a.Fecha).Take(300).ToListAsync();
+        nombres = await db.Pacientes.ToDictionaryAsync(p => p.IdPaciente, p => p.NombreCompleto);
+    }
+}

@@ -1,0 +1,57 @@
+@page "/panel"
+@attribute [Authorize]
+@using System.Security.Claims
+@inject IDbContextFactory<AppDb> F
+<h2>Panel de @rol</h2>
+<p class="text-muted">Sesión iniciada como @usuario</p>
+@if (clavesPrueba)
+{
+    <div class="alert alert-danger">⚠️ Hay cuentas que todavía usan la contraseña de prueba. Cámbielas en <a href="usuarios">Usuarios</a> antes de usar el sistema con datos reales.</div>
+}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="stat"><div class="n">@hoy</div>Citas de hoy</div></div>
+    <div class="col-6 col-lg-3"><div class="stat"><div class="n">@sol</div>Solicitudes por atender</div></div>
+    <div class="col-6 col-lg-3"><div class="stat"><div class="n">@pac</div>Pacientes</div></div>
+    <div class="col-6 col-lg-3"><div class="stat"><div class="n">@odo</div>Odontólogos disponibles</div></div>
+</div>
+<div class="mb-4 d-flex flex-wrap gap-2">
+    @if (rol != "Administrador") { <a class="btn btn-primary" href="agenda">Ir a la agenda</a><a class="btn btn-outline-primary" href="pacientes">Pacientes</a> }
+    @if (rol == "Odontólogo") { <a class="btn btn-outline-primary" href="clinico">Información clínica</a> }
+    @if (rol == "Administrador") { <a class="btn btn-primary" href="usuarios">Usuarios</a><a class="btn btn-outline-primary" href="odontologos">Odontólogos</a><a class="btn btn-outline-primary" href="catalogo">Catálogo</a> }
+</div>
+@if (rol != "Administrador")
+{
+    <h4>Próximas citas</h4>
+    <div class="table-responsive"><table class="table table-sm align-middle">
+        <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Odontólogo</th><th>Servicio</th><th>Estado</th></tr></thead><tbody>
+        @foreach (var c in prox) { <tr><td>@c.FechaHora.ToString("dd/MM/yyyy")</td><td>@c.FechaHora.ToString("HH:mm")</td><td>@c.Paciente?.NombreCompleto</td><td>@c.Odontologo?.Nombre</td><td>@c.Servicio?.NombreServicio</td><td>@c.Estado</td></tr> }
+        @if (prox.Count == 0) { <tr><td colspan="6" class="text-muted">No hay citas próximas.</td></tr> }
+        </tbody></table></div>
+}
+@code {
+    [CascadingParameter] Task<AuthenticationState> Auth { get; set; } = default!;
+    bool clavesPrueba; int hoy, sol, pac, odo; string rol = "", usuario = ""; List<Cita> prox = new();
+    protected override async Task OnInitializedAsync()
+    {
+        var u = (await Auth).User;
+        rol = u.FindFirst(ClaimTypes.Role)?.Value ?? ""; usuario = u.Identity?.Name ?? "";
+        Guid? od = Guid.TryParse(u.FindFirst("odId")?.Value, out var g) ? g : null;
+        await using var db = await F.CreateDbContextAsync();
+        if (rol == "Administrador")
+        {
+            var prueba = new Dictionary<string, string> { ["admin@confiden.com"] = "Admin123", ["recepcion@confiden.com"] = "Recep123", ["odonto@confiden.com"] = "Odonto123" };
+            var correos = prueba.Keys.ToArray();
+            var us = await db.Usuarios.Where(x => correos.Contains(x.Correo)).ToListAsync();
+            clavesPrueba = us.Any(x => BCrypt.Net.BCrypt.Verify(prueba[x.Correo], x.ContraseniaHash));
+        }
+        var q = db.Citas.AsQueryable();
+        if (rol == "Odontólogo" && od != null) q = q.Where(c => c.OdontologoId == od);
+        var d = DateTime.Today;
+        hoy = await q.CountAsync(c => c.FechaHora >= d && c.FechaHora < d.AddDays(1) && c.Estado != "Cancelada");
+        sol = await db.Citas.CountAsync(c => c.Estado == "Solicitada");
+        pac = await db.Pacientes.CountAsync();
+        odo = await db.Odontologos.CountAsync(o => o.Disponible);
+        prox = await q.Include(c => c.Paciente).Include(c => c.Odontologo).Include(c => c.Servicio)
+            .Where(c => c.FechaHora >= DateTime.Now && c.Estado != "Cancelada").OrderBy(c => c.FechaHora).Take(6).ToListAsync();
+    }
+}

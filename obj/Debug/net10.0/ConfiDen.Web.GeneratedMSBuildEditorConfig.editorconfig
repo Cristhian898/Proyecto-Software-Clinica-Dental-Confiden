@@ -1,0 +1,116 @@
+is_global = true
+build_property.TargetFramework = net10.0
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v10.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property.EntryPointFilePath = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = ConfiDen.Web
+build_property.RootNamespace = ConfiDen.Web
+build_property.ProjectDir = C:\Users\andyd\Downloads\web\ConfiDent_Web_v9\ConfiDen.Web\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 10.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\Users\andyd\Downloads\web\ConfiDent_Web_v9\ConfiDen.Web
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 10.0
+build_property.EnableCodeStyleSeverity = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTWFpbkxheW91dC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Agenda.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBZ2VuZGEucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Auditoria.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBdWRpdG9yaWEucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Catalogo.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDYXRhbG9nby5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Clinico.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDbGluaWNvLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Contacto.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDb250YWN0by5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Disponibilidad.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xEaXNwb25pYmlsaWRhZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Equipo.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xFcXVpcG8ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Faq.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xGYXEucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Galeria.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xHYWxlcmlhLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xMb2dpbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/MiCita.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xNaUNpdGEucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Odontologos.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xPZG9udG9sb2dvcy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Pacientes.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xQYWNpZW50ZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Panel.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xQYW5lbC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Privacidad.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xQcml2YWNpZGFkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Servicios.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTZXJ2aWNpb3MucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/SolicitarCita.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTb2xpY2l0YXJDaXRhLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Pages/Usuarios.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xVc3Vhcmlvcy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xSb3V0ZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/andyd/Downloads/web/ConfiDent_Web_v9/ConfiDen.Web/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 

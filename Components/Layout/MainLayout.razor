@@ -1,0 +1,64 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject IWebHostEnvironment Env
+<nav class="navbar">
+    <div class="container flex-wrap gap-2">
+        <a class="navbar-brand" href="" aria-label="ConfiDent – Clínica Odontológica, inicio"><img class="brand-logo logo-l" src="img/logo.png?v=2" alt="Logo de la Clínica Odontológica ConfiDent" /><img class="brand-logo logo-d" src="img/logo-claro.png?v=2" alt="" aria-hidden="true" /></a>
+        <button class="navbar-toggle ms-auto" type="button" aria-label="Abrir menú" aria-expanded="@menu.ToString().ToLower()" @onclick="() => menu = !menu">@(menu ? "✕" : "☰")</button>
+        <div class="navbar-nav flex-row flex-wrap gap-1 align-items-center nav-menu @(menu ? "open" : "")" @onclick="() => menu = false">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">Inicio</NavLink>
+            <NavLink class="nav-link" href="servicios">Servicios</NavLink>
+            <NavLink class="nav-link" href="equipo">Equipo</NavLink>
+            <NavLink class="nav-link" href="galeria">Galería</NavLink>
+            <NavLink class="nav-link" href="preguntas-frecuentes">Preguntas frecuentes</NavLink>
+            <NavLink class="nav-link" href="disponibilidad">Horarios libres</NavLink>
+            <NavLink class="nav-link" href="mi-cita">Mi cita</NavLink>
+            <NavLink class="nav-link" href="contacto">Contacto</NavLink>
+            <NavLink class="nav-link nav-cta" href="cita">Agendar cita</NavLink>
+            <AuthorizeView Context="pub"><NotAuthorized><NavLink class="nav-link" href="login">Acceso personal</NavLink></NotAuthorized></AuthorizeView>
+            <span class="tools"><button type="button" class="btn-tool" onclick="cdTheme()" aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro">🌓</button><button type="button" class="btn-tool" onclick="cdFont()" aria-label="Cambiar tamaño de letra" title="Tamaño de letra">A+</button></span>
+        </div>
+    </div>
+</nav>
+<AuthorizeView Context="auth">
+    <Authorized>
+        <div class="staffbar"><div class="container d-flex flex-wrap align-items-center">
+            <span class="who">@auth.User.Identity?.Name</span>
+            <NavLink class="sb" href="panel">Panel</NavLink>
+            <AuthorizeView Roles="Recepcionista,Odontólogo" Context="r1"><NavLink class="sb" href="pacientes">Pacientes</NavLink><NavLink class="sb" href="agenda">Agenda</NavLink></AuthorizeView>
+            <AuthorizeView Roles="Odontólogo" Context="r2"><NavLink class="sb" href="clinico">Clínico</NavLink></AuthorizeView>
+            <AuthorizeView Roles="Administrador,Recepcionista" Context="r3"><NavLink class="sb" href="odontologos">Odontólogos</NavLink></AuthorizeView>
+            <AuthorizeView Roles="Administrador" Context="r4"><NavLink class="sb" href="catalogo">Catálogo</NavLink><NavLink class="sb" href="usuarios">Usuarios</NavLink><NavLink class="sb" href="auditoria">Accesos</NavLink></AuthorizeView>
+            <a class="sb ms-auto" href="logout" data-enhance-nav="false">Salir</a>
+        </div></div>
+    </Authorized>
+</AuthorizeView>
+<main class="container py-4">
+    <ErrorBoundary @key="Nav.Uri">
+        <ChildContent>@Body</ChildContent>
+        <ErrorContent><div class="alert alert-danger">Ocurrió un problema al procesar la operación. Intente de nuevo.@if (Env.IsDevelopment()) {<pre class="small mt-2 mb-0" style="white-space:pre-wrap">@context.ToString()</pre>}</div></ErrorContent>
+    </ErrorBoundary>
+</main>
+<a class="wa-float" href="@DatosClinica.WaInfo" target="_blank" rel="noopener" aria-label="Escribir a ConfiDent por WhatsApp" title="Escribir por WhatsApp">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path fill="#fff" d="M16 3C9.4 3 4 8.3 4 14.9c0 2.3.7 4.5 1.9 6.3L4 29l8-2.1a12.2 12.2 0 0 0 4 .7c6.6 0 12-5.300 12-11.900S22.600 3 16 3zm0 21.800c-1.300 0-2.500-.3-3.600-.9l-.6-.3-4.700 1.200 1.300-4.600-.4-.7a9.700 9.700 0 0 1-1.500-5.200C6.500 9.600 10.800 5.500 16 5.500s9.500 4.100 9.500 9.400-4.300 9.900-9.500 9.900zm5.200-7.400c-.3-.1-1.700-.8-2-.9s-.5-.1-.7.100-.8.900-.9 1.100-.3.200-.6.100a8 8 0 0 1-4-3.500c-.3-.5.300-.5.900-1.600.1-.2.100-.4 0-.5l-.9-2.100c-.2-.6-.5-.5-.7-.5h-.6a1.200 1.200 0 0 0-.9.4 3.700 3.700 0 0 0-1.100 2.700 6.400 6.400 0 0 0 1.400 3.400 14.600 14.600 0 0 0 5.600 4.900c2.100.9 2.900.9 3.400.8a2.900 2.900 0 0 0 1.900-1.300 2.300 2.300 0 0 0 .2-1.300c-.1-.1-.3-.2-.6-.3z"/></svg>
+</a>
+<footer class="site">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-5"><h6><img class="footer-logo" src="img/logo-claro.png?v=2" alt="Logo de la Clínica Odontológica ConfiDent" /></h6><p>Clínica odontológica en Managua, Nicaragua. Cuidamos su salud dental con atención organizada y su información protegida.</p></div>
+            <div class="col-6 col-md-3"><h6>Conozca la clínica</h6>
+                <div><a href="servicios">Servicios</a></div><div><a href="equipo">Equipo</a></div><div><a href="galeria">Galería</a></div><div><a href="preguntas-frecuentes">Preguntas frecuentes</a></div><div><a href="contacto">Contacto y ubicación</a></div><div><a href="mi-cita">Consultar mi cita</a></div><div><a href="privacidad">Política de privacidad</a></div></div>
+            <div class="col-6 col-md-4"><h6>Contacto</h6>
+                <div>Teléfono y WhatsApp: <a href="@DatosClinica.TelefonoLink">@DatosClinica.TelefonoVisible</a></div>
+                <div>Correo: <a href="@DatosClinica.CorreoLink">@DatosClinica.Correo</a></div>
+                <div>Ubicación: <a href="@DatosClinica.Mapa" target="_blank" rel="noopener">@DatosClinica.PlusCode, Managua</a></div>
+                <div>Lunes a viernes, 8:00 a. m. a 5:00 p. m.</div></div>
+        </div>
+        <div class="slogan">Clínica Odontológica ConfiDent: Creando sonrisas sanas, construyendo momentos de confianza.</div>
+        <div class="fine">© ConfiDent – Clínica Odontológica. Todos los derechos reservados.</div>
+    </div>
+</footer>
+
+@code {
+    bool menu;
+}

@@ -1,0 +1,70 @@
+@page "/"
+@inject IDbContextFactory<AppDb> F
+<div class="band hero-band"><div class="in">
+    <div>
+        <h1>Tu sonrisa es tu mejor carta de presentación.</h1>
+        <p>Cuidamos cada detalle para que sonrías con total confianza.</p>
+        <div class="chips"><span class="chip2">Calidad</span><span class="chip2">Confianza</span><span class="chip2">Cuidado</span><span class="chip2">Seguimiento</span></div>
+        <a class="btn btn-light-brand btn-lg me-2" href="cita">Agendar cita</a>
+        <a class="btn btn-ghost btn-lg" href="servicios">Ver servicios</a>
+    </div>
+    <div class="tooth-card">
+        <img class="hero-logo logo-l" src="img/logo.png?v=2" alt="Logo de la Clínica Odontológica ConfiDent" /><img class="hero-logo logo-d" src="img/logo-claro.png?v=2" alt="" aria-hidden="true" />
+        <div class="h">Horario de atención</div>
+        <div class="text-muted">Lunes a viernes<br />8:00 a. m. a 5:00 p. m.</div>
+    </div>
+</div></div>
+
+<section class="section">
+    <h2 class="section-title">¿Por qué elegir ConfiDent?</h2>
+    <p class="lead2">La salud bucal no es solo estética, es bienestar para toda la vida. Un diagnóstico a tiempo previene grandes molestias.</p>
+    <div class="row g-3">
+        <div class="col-md-4"><div class="val"><div class="ic">📅</div><h5>Citas organizadas</h5><p class="text-muted mb-0">Su solicitud queda registrada y el sistema revisa que el horario esté libre antes de guardarla.</p></div></div>
+        <div class="col-md-4"><div class="val"><div class="ic">🔒</div><h5>Información protegida</h5><p class="text-muted mb-0">Sus datos y su historial clínico solo los consulta el personal autorizado de la clínica.</p></div></div>
+        <div class="col-md-4"><div class="val"><div class="ic">🩺</div><h5>Seguimiento de su tratamiento</h5><p class="text-muted mb-0">Su odontólogo registra cada consulta y da seguimiento a sus tratamientos en un solo historial.</p></div></div>
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Nuestros servicios</h2>
+    <p class="lead2">Atención odontológica para el cuidado de toda la familia.</p>
+    <div class="row g-3">
+    @foreach (var s in servicios)
+    {
+        <div class="col-md-6 col-lg-3"><div class="svc">@if (ServicioInfo.Imagen(s) is string im) { <div class="svc-pic"><img src="@im" alt="@s.NombreServicio" loading="lazy" /></div> }<h5>@s.NombreServicio</h5><p class="text-muted">@s.Descripcion</p><div class="price">@Precios.Texto(s)</div></div></div>
+    }
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Cómo agendar su cita</h2>
+    <ol class="steps mt-3">
+        <li><b>Elija el servicio</b><br /><span class="text-muted">y, si lo desea, su odontólogo.</span></li>
+        <li><b>Escoja un horario libre</b><br /><span class="text-muted">el sistema comprueba que esté disponible.</span></li>
+        <li><b>Reciba la confirmación</b><br /><span class="text-muted">la clínica atenderá su solicitud.</span></li>
+    </ol>
+</section>
+
+<section class="section">
+    <div class="mc-promo">
+        <div class="mc-promo-ic">📅</div>
+        <div class="flex-grow-1">
+            <h3 class="mb-1">¿Ya solicitó una cita?</h3>
+            <p class="mb-0 text-muted">Consulte la fecha y la hora, cancélela o pida reprogramarla con solo su cédula y su teléfono.</p>
+        </div>
+        <a class="btn btn-primary btn-lg" href="mi-cita">Consultar mi cita</a>
+    </div>
+</section>
+
+<div class="band cta-band"><div class="in">
+    <div><h3 class="mb-1">No pospongas tu salud.</h3><div class="opacity-75">Regálate la tranquilidad de una boca sana y agenda tu cita hoy.</div></div>
+    <div><a class="btn btn-light-brand btn-lg me-2" href="cita">Agendar cita</a><a class="btn btn-ghost btn-lg" href="disponibilidad">Ver horarios libres</a></div>
+</div></div>
+@code {
+    List<Servicio> servicios = new();
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        servicios = await db.Servicios.OrderBy(s => s.NombreServicio).ToListAsync();
+    }
+}

@@ -1,0 +1,23 @@
+@page "/servicios"
+@inject IDbContextFactory<AppDb> F
+<h2>Servicios odontológicos</h2>
+<p class="lead2">Tratamientos diseñados para proteger, restaurar y resaltar la belleza natural de tus dientes.</p>
+<div class="searchbox"><input class="form-control" placeholder="Buscar servicio…" aria-label="Buscar servicio" @bind="q" @bind:event="oninput" /></div>
+<div class="row g-3">
+@foreach (var s in Filtrada)
+{
+    <div class="col-md-6 col-lg-4"><div class="svc d-flex flex-column">@if (ServicioInfo.Imagen(s) is string im) { <div class="svc-pic"><img src="@im" alt="@s.NombreServicio" loading="lazy" /></div> }<h5>@s.NombreServicio</h5><p class="text-muted mb-2">@s.Descripcion</p>@if (ServicioInfo.Frase(s) is string fr) { <p class="svc-quote flex-grow-1">@fr</p> } else { <div class="flex-grow-1"></div> }
+        <div class="d-flex justify-content-between align-items-center"><span class="price">@Precios.Texto(s)</span><a class="btn btn-sm btn-outline-primary" href="cita">Agendar</a></div></div></div>
+}
+</div>
+@if (!Filtrada.Any()) { <div class="alert alert-info">No encontramos servicios con “@q”.</div> }
+@code {
+    List<Servicio> lista = new();
+    string q = "";
+    IEnumerable<Servicio> Filtrada => string.IsNullOrWhiteSpace(q) ? lista : lista.Where(x => x.NombreServicio.Contains(q, StringComparison.OrdinalIgnoreCase) || (x.Descripcion ?? "").Contains(q, StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        lista = await db.Servicios.OrderBy(s => s.NombreServicio).ToListAsync();
+    }
+}

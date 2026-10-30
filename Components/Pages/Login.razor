@@ -1,0 +1,16 @@
+@page "/login"
+@attribute [ExcludeFromInteractiveRouting]
+<h2>Acceso del personal</h2>
+@if (E == "1") { <div class="alert alert-danger" style="max-width:420px">Correo o contraseña incorrectos.</div> }
+@if (E == "2") { <div class="alert alert-warning" style="max-width:420px">La cuenta está inactiva. Contacte al administrador.</div> }
+@if (E == "3") { <div class="alert alert-danger" style="max-width:420px">Demasiados intentos fallidos. Espere 5 minutos e intente de nuevo.</div> }
+<form method="post" action="/auth/login" style="max-width:420px">
+    <label class="form-label" for="correo">Correo</label>
+    <input id="correo" name="correo" type="email" class="form-control" required autocomplete="username" />
+    <label class="form-label mt-2" for="clave">Contraseña</label>
+    <input id="clave" name="clave" type="password" class="form-control" required autocomplete="current-password" />
+    <button class="btn btn-primary mt-3">Ingresar</button>
+</form>
+@code {
+    [SupplyParameterFromQuery(Name = "e")] public string? E { get; set; }
+}

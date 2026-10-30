@@ -1,0 +1,14 @@
+@page "/contacto"
+<PageTitle>Contacto y ubicación – ConfiDent</PageTitle>
+<h2>Contacto y ubicación</h2>
+<p class="lead2">Escríbanos, llámenos o visítenos. Atendemos de lunes a viernes, de 8:00 a. m. a 5:00 p. m.</p>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3"><a class="ccard" href="@DatosClinica.WaInfo" target="_blank" rel="noopener"><span class="ic">💬</span><b>WhatsApp</b><span>@DatosClinica.TelefonoVisible</span></a></div>
+    <div class="col-sm-6 col-lg-3"><a class="ccard" href="@DatosClinica.TelefonoLink"><span class="ic">📞</span><b>Llamar</b><span>@DatosClinica.TelefonoVisible</span></a></div>
+    <div class="col-sm-6 col-lg-3"><a class="ccard" href="@DatosClinica.CorreoLink"><span class="ic">✉️</span><b>Correo</b><span class="text-break">@DatosClinica.Correo</span></a></div>
+    <div class="col-sm-6 col-lg-3"><a class="ccard" href="@DatosClinica.Mapa" target="_blank" rel="noopener"><span class="ic">📍</span><b>Cómo llegar</b><span>@DatosClinica.PlusCode, Managua</span></a></div>
+</div>
+<div class="map-wrap">
+    <iframe title="Mapa de ubicación de la clínica ConfiDent" src="@DatosClinica.MapaEmbed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+</div>
+<p class="text-muted mt-3 mb-0">También puede <a href="cita">solicitar su cita en línea</a> o <a href="mi-cita">consultar una cita ya solicitada</a>.</p>

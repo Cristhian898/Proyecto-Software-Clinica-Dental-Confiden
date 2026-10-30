@@ -1,0 +1,101 @@
+@page "/cita"
+@inject IDbContextFactory<AppDb> F
+@inject CitaService Citas
+<h2>Solicitar cita</h2>
+<p class="lead2">Tu salud bucal está a solo un clic. Elige el horario que mejor se adapte a tu rutina.</p>
+@if (ok != null) { <div class="alert alert-success">@ok</div> }
+@if (err != null) { <div class="alert alert-danger">@err</div> }
+@if (waLink != null)
+{
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-success" href="@waLink" target="_blank" rel="noopener">Avisar a la clínica por WhatsApp</a>
+        <a class="btn btn-outline-primary" href="mi-cita">Consultar o cancelar mi cita</a>
+    </div>
+}
+<EditForm Model="M" OnValidSubmit="Enviar">
+    <DataAnnotationsValidator /><ValidationSummary />
+    <div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Nombre completo</label><InputText class="form-control" @bind-Value="M.Nombre" /></div>
+        <div class="col-md-6"><label class="form-label">Cédula</label><InputText class="form-control" placeholder="001-010190-0001A" @bind-Value="M.Cedula" /></div>
+        <div class="col-md-6"><label class="form-label">Teléfono</label><InputText class="form-control" @bind-Value="M.Telefono" /></div>
+        <div class="col-md-6"><label class="form-label">Dirección</label><InputText class="form-control" @bind-Value="M.Direccion" /></div>
+        <div class="col-md-6"><label class="form-label">Servicio</label>
+            <InputSelect class="form-select" @bind-Value="M.ServicioId">@foreach (var s in servicios) {<option value="@s.IdServicio">@s.NombreServicio</option>}</InputSelect></div>
+        <div class="col-md-6"><label class="form-label">Odontólogo</label>
+            <InputSelect class="form-select" @bind-Value="M.OdontologoId"><option value="@Guid.Empty">Cualquiera disponible</option>@foreach (var o in odontologos) {<option value="@o.IdOdontologo">@o.Nombre</option>}</InputSelect></div>
+        <div class="col-md-6"><label class="form-label">Fecha</label><InputDate class="form-control" @bind-Value="M.Fecha" /></div>
+        <div class="col-md-6"><label class="form-label">Hora</label>
+            <InputSelect class="form-select" @bind-Value="M.Hora">@foreach (var h in Horario.Horas) {<option>@h</option>}</InputSelect></div>
+    </div>
+    @if (ServicioActual is Servicio sv) { <div class="price-live mt-3">Precio de referencia: @Precios.Texto(sv)</div> }
+    <div class="consent">
+        <div class="form-check">
+            <InputCheckbox class="form-check-input" id="ok-datos" @bind-Value="M.Acepto" />
+            <label class="form-check-label" for="ok-datos">He leído la <a href="privacidad" target="_blank">política de privacidad</a> y autorizo a ConfiDent a tratar mis datos personales para gestionar mi cita y mi atención.</label>
+        </div>
+        <ValidationMessage For="() => M.Acepto" />
+    </div>
+    <button class="btn btn-primary mt-3" disabled="@enviando">@(enviando ? "Enviando…" : "Enviar solicitud")</button>
+    <p class="text-muted mt-3 mb-0">Dar el primer paso es fácil. Nosotros nos encargamos de cuidar de ti en cada visita.</p>
+</EditForm>
+@code {
+    [SupplyParameterFromQuery(Name = "od")] public Guid? QOd { get; set; }
+    [SupplyParameterFromQuery(Name = "f")] public DateTime? QFecha { get; set; }
+    [SupplyParameterFromQuery(Name = "h")] public string? QHora { get; set; }
+    SolicitudWeb M = new();
+    List<Servicio> servicios = new();
+    List<Odontologo> odontologos = new();
+    string? ok, err;
+    bool enviando;
+    string? waLink;
+    Servicio? ServicioActual => servicios.FirstOrDefault(x => x.IdServicio == M.ServicioId);
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        servicios = await db.Servicios.OrderBy(s => s.NombreServicio).ToListAsync();
+        odontologos = await db.Odontologos.Where(o => o.Disponible).ToListAsync();
+        M.ServicioId = servicios.FirstOrDefault()?.IdServicio ?? Guid.Empty;
+        if (QOd != null) M.OdontologoId = QOd.Value;
+        if (QFecha != null && QFecha.Value.Date >= DateTime.Today) M.Fecha = QFecha.Value.Date;
+        if (!string.IsNullOrEmpty(QHora) && Horario.Horas.Contains(QHora)) M.Hora = QHora;
+    }
+    async Task Enviar()
+    {
+        ok = err = null; waLink = null;
+        enviando = true;
+        try { await Guardar(); } finally { enviando = false; }
+    }
+    async Task Guardar()
+    {
+        var fh = M.Fecha.Date + TimeSpan.Parse(M.Hora);
+        if (fh < DateTime.Now) { err = "La fecha y hora no pueden ser pasadas."; return; }
+        if (!Horario.EsLaborable(fh)) { err = "La clínica atiende de lunes a viernes. Elija un día hábil."; return; }
+        Guid? od = M.OdontologoId == Guid.Empty ? await Citas.PrimerLibre(fh) : M.OdontologoId;
+        if (od == null || !await Citas.EstaLibre(od.Value, fh)) { err = "Ese horario no está disponible. Elija otro horario u otro odontólogo."; return; }
+        await using var db = await F.CreateDbContextAsync();
+        var p = await db.Pacientes.FirstOrDefaultAsync(x => x.Cedula == M.Cedula);
+        if (p == null)
+        {
+            p = new Paciente { NombreCompleto = M.Nombre, Cedula = M.Cedula, Telefono = M.Telefono, Direccion = M.Direccion };
+            db.Pacientes.Add(p);
+        }
+        db.Citas.Add(new Cita { PacienteId = p.IdPaciente, OdontologoId = od.Value, ServicioId = M.ServicioId, FechaHora = fh, Estado = "Solicitada" }); // RN-07
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { err = "El horario fue ocupado por otra cita. Elija otro."; return; }
+        ok = $"Solicitud enviada para el {fh:dd/MM/yyyy} a las {fh:HH:mm}. Estado: Solicitada. La clínica la confirmará.";
+        waLink = DatosClinica.WaClinica($"Hola, soy {M.Nombre}. Acabo de solicitar una cita en ConfiDent para el {fh:dd/MM/yyyy} a las {fh:HH:mm}.");
+        M = new() { ServicioId = M.ServicioId };
+    }
+    public class SolicitudWeb
+    {
+        [Required(ErrorMessage = "Ingrese su nombre."), MaxLength(150), RegularExpression(@"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$", ErrorMessage = "El nombre solo puede tener letras y espacios.")] public string Nombre { get; set; } = "";
+        [Required(ErrorMessage = "Ingrese su cédula."), RegularExpression(@"^[0-9]{3}-[0-9]{6}-[0-9]{4}[A-Z]$", ErrorMessage = "Cédula con formato 000-000000-0000X.")] public string Cedula { get; set; } = "";
+        [Required(ErrorMessage = "Ingrese su teléfono."), RegularExpression(@"^[2578][0-9]{7}$", ErrorMessage = "El teléfono debe tener 8 dígitos y empezar con 2, 5, 7 u 8.")] public string Telefono { get; set; } = "";
+        [Required(ErrorMessage = "Ingrese su dirección."), MaxLength(250)] public string Direccion { get; set; } = "";
+        public Guid ServicioId { get; set; }
+        public Guid OdontologoId { get; set; }
+        public DateTime Fecha { get; set; } = DateTime.Today;
+        public string Hora { get; set; } = "08:00";
+        [Range(typeof(bool), "true", "true", ErrorMessage = "Debe aceptar la política de privacidad para continuar.")] public bool Acepto { get; set; }
+    }
+}

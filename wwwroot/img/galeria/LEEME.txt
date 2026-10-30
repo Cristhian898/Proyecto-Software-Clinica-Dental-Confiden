@@ -1,0 +1,8 @@
+Fotos de la galeria (.jpg, .jpeg, .png o .webp). Aparecen solas en la pagina Galeria.
+El nombre del archivo define la categoria:
+  restauraciones-1.jpg  -> Restauraciones
+  protesis-1.jpg        -> Protesis fijas
+  ortodoncia-1.jpg      -> Ortodoncia
+  limpieza-1.jpg        -> Limpieza dental
+Cualquier otro nombre (ej. consultorio-1.jpg) aparece como "Instalaciones".
+Publique solo fotos de pacientes que hayan dado su autorizacion por escrito.

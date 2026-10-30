@@ -1,0 +1,78 @@
+@page "/disponibilidad"
+@using System.Globalization
+@inject IDbContextFactory<AppDb> F
+<PageTitle>Horarios libres – ConfiDent</PageTitle>
+<h2>Horarios libres</h2>
+<p class="lead2">Tu salud bucal está a solo un clic. Elige el horario que mejor se adapte a tu rutina.</p>
+<p class="text-muted">Elija un día en el calendario y toque un horario disponible para iniciar su solicitud. Atendemos de lunes a viernes.</p>
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="cal">
+            <div class="cal-head">
+                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(!PuedeAtras)" @onclick="() => CambiarMes(-1)" aria-label="Mes anterior">◀</button>
+                <b>@NombreMes</b>
+                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(!PuedeAdelante)" @onclick="() => CambiarMes(1)" aria-label="Mes siguiente">▶</button>
+            </div>
+            <div class="cal-grid">
+                @foreach (var n in Dias) { <div class="cal-dow">@n</div> }
+                @for (var i = 0; i < Offset; i++) { <div></div> }
+                @for (var d = 1; d <= DateTime.DaysInMonth(mes.Year, mes.Month); d++)
+                {
+                    var dia = new DateTime(mes.Year, mes.Month, d);
+                    var ok = Horario.EsLaborable(dia) && dia >= DateTime.Today;
+                    <button type="button" class="cal-day @(dia == fecha.Date ? "sel" : "") @(dia == DateTime.Today ? "hoy" : "")" disabled="@(!ok)" @onclick="() => Elegir(dia)">@d</button>
+                }
+            </div>
+            <div class="small text-muted mt-2">Los fines de semana y los días pasados no están disponibles.</div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <h5 class="mb-3 text-capitalize">@fecha.ToString("dddd d 'de' MMMM", Es)</h5>
+        @foreach (var o in odontologos)
+        {
+            <div class="card card-body mb-3">
+                <h5 class="mb-0">@o.Nombre</h5><div class="text-muted mb-2">@o.Especialidad</div>
+                <div>
+                @foreach (var h in Horario.Horas)
+                {
+                    @if (Ocupado(o.IdOdontologo, h)) { <span class="slot off">@h</span> }
+                    else { <a class="slot" href="cita?od=@o.IdOdontologo&f=@fecha.ToString("yyyy-MM-dd")&h=@h">@h</a> }
+                }
+                </div>
+            </div>
+        }
+        @if (odontologos.Count == 0) { <div class="alert alert-info">No hay odontólogos disponibles por el momento.</div> }
+    </div>
+</div>
+@code {
+    static readonly CultureInfo Es = CultureInfo.GetCultureInfo("es");
+    static readonly string[] Dias = { "Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do" };
+    DateTime fecha = Inicio();
+    DateTime mes;
+    List<Odontologo> odontologos = new();
+    Dictionary<Guid, HashSet<string>> ocupadas = new();
+    int Offset => ((int)new DateTime(mes.Year, mes.Month, 1).DayOfWeek + 6) % 7; // semana empieza en lunes
+    string NombreMes => new DateTime(mes.Year, mes.Month, 1).ToString("MMMM yyyy", Es);
+    bool PuedeAtras => mes > new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    bool PuedeAdelante => mes < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(3);
+    static DateTime Inicio()
+    {
+        var d = DateTime.Today;
+        while (!Horario.EsLaborable(d) || (d == DateTime.Today && DateTime.Now.TimeOfDay > new TimeSpan(16, 30, 0))) d = d.AddDays(1);
+        return d;
+    }
+    protected override async Task OnInitializedAsync() { mes = new DateTime(fecha.Year, fecha.Month, 1); await Cargar(); }
+    void CambiarMes(int n) => mes = mes.AddMonths(n);
+    async Task Elegir(DateTime d) { fecha = d; await Cargar(); }
+    async Task Cargar()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        odontologos = await db.Odontologos.Where(o => o.Disponible).OrderBy(o => o.Nombre).ToListAsync();
+        var d = fecha.Date;
+        var citas = await db.Citas.Where(c => c.FechaHora >= d && c.FechaHora < d.AddDays(1) && c.Estado != "Cancelada")
+            .Select(c => new { c.OdontologoId, c.FechaHora }).ToListAsync();
+        ocupadas = citas.GroupBy(c => c.OdontologoId).ToDictionary(g => g.Key, g => g.Select(x => x.FechaHora.ToString("HH:mm")).ToHashSet());
+    }
+    bool Ocupado(Guid od, string h) =>
+        (ocupadas.TryGetValue(od, out var s) && s.Contains(h)) || (fecha.Date + TimeSpan.Parse(h) < DateTime.Now);
+}

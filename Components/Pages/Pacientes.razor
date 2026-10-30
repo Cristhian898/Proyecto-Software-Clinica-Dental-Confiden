@@ -1,0 +1,49 @@
+@page "/pacientes"
+@attribute [Authorize(Roles = "Recepcionista,Odontólogo")]
+@inject IDbContextFactory<AppDb> F
+<h2>Pacientes</h2>
+@if (err != null) { <div class="alert alert-danger">@err</div> }
+<div class="input-group mb-3">
+    <input class="form-control" placeholder="Buscar por nombre o cédula" @bind="q" @bind:event="oninput" />
+    <AuthorizeView Roles="Recepcionista"><button class="btn btn-primary" @onclick="Nuevo">Nuevo paciente</button></AuthorizeView>
+</div>
+@if (edit != null)
+{
+    <EditForm Model="edit" OnValidSubmit="Guardar" class="card card-body mb-3">
+        <DataAnnotationsValidator /><ValidationSummary />
+        <div class="row g-2">
+            <div class="col-md-6"><label class="form-label">Nombre completo</label><InputText class="form-control" @bind-Value="edit.NombreCompleto" /></div>
+            <div class="col-md-6"><label class="form-label">Cédula</label><InputText class="form-control" @bind-Value="edit.Cedula" /></div>
+            <div class="col-md-6"><label class="form-label">Teléfono</label><InputText class="form-control" @bind-Value="edit.Telefono" /></div>
+            <div class="col-md-6"><label class="form-label">Dirección</label><InputText class="form-control" @bind-Value="edit.Direccion" /></div>
+        </div>
+        <div class="mt-3"><button class="btn btn-primary">Guardar</button> <button type="button" class="btn btn-outline-secondary" @onclick="() => edit = null">Cancelar</button></div>
+    </EditForm>
+}
+<div class="table-responsive"><table class="table table-sm align-middle bg-body">
+    <thead><tr><th>Nombre</th><th>Cédula</th><th>Teléfono</th><th>Dirección</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var p in Filtrados())
+    {
+        <tr><td>@p.NombreCompleto</td><td>@p.Cedula</td><td>@p.Telefono</td><td>@p.Direccion</td>
+            <td><AuthorizeView Roles="Recepcionista"><button class="btn btn-sm btn-outline-primary" @onclick="() => Editar(p)">Editar</button></AuthorizeView><AuthorizeView Roles="Odontólogo"><a class="btn btn-sm btn-outline-secondary" href="clinico?p=@p.IdPaciente">Ver historial</a></AuthorizeView></td></tr>
+    }
+    @if (!Filtrados().Any()) { <tr><td colspan="5" class="text-muted">No hay pacientes con ese criterio.</td></tr> }
+    </tbody></table></div>
+@code {
+    List<Paciente> lista = new();
+    Paciente? edit; bool nuevo; string q = ""; string? err;
+    IEnumerable<Paciente> Filtrados() => lista.Where(p => p.NombreCompleto.Contains(q, StringComparison.OrdinalIgnoreCase) || p.Cedula.Contains(q, StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync() => await Cargar();
+    async Task Cargar() { await using var db = await F.CreateDbContextAsync(); lista = await db.Pacientes.OrderBy(p => p.NombreCompleto).ToListAsync(); }
+    void Nuevo() { edit = new(); nuevo = true; err = null; }
+    void Editar(Paciente p) { edit = new Paciente { IdPaciente = p.IdPaciente, NombreCompleto = p.NombreCompleto, Cedula = p.Cedula, Telefono = p.Telefono, Direccion = p.Direccion, FechaRegistro = p.FechaRegistro }; nuevo = false; err = null; }
+    async Task Guardar()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        if (nuevo) db.Pacientes.Add(edit!); else db.Pacientes.Update(edit!);
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { err = "Ya existe un paciente con esa cédula."; return; } // RD-02
+        edit = null; err = null; await Cargar();
+    }
+}

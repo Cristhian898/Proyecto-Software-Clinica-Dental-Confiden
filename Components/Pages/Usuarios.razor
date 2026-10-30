@@ -1,0 +1,68 @@
+@page "/usuarios"
+@attribute [Authorize(Roles = "Administrador")]
+@inject IDbContextFactory<AppDb> F
+<h2>Usuarios y roles</h2>
+@if (err != null) { <div class="alert alert-danger">@err</div> }
+@if (ok != null) { <div class="alert alert-success">@ok</div> }
+<button class="btn btn-primary mb-3" @onclick="Nuevo">Crear usuario</button>
+@if (f != null)
+{
+    <EditForm Model="f" OnValidSubmit="Guardar" class="card card-body mb-3"><DataAnnotationsValidator /><ValidationSummary />
+        <h5>@(f.Id == null ? "Nuevo usuario" : "Editar usuario")</h5>
+        <div class="row g-2">
+            <div class="col-md-3"><label class="form-label">Correo</label><InputText class="form-control" @bind-Value="f.Correo" disabled="@(f.Id != null)" /></div>
+            <div class="col-md-3"><label class="form-label">@(f.Id == null ? "Contraseña (mínimo 8)" : "Nueva contraseña (opcional)")</label><InputText type="password" class="form-control" @bind-Value="f.Clave" /></div>
+            <div class="col-md-3"><label class="form-label">Rol</label><InputSelect class="form-select" @bind-Value="f.IdRol">@foreach (var r in roles) {<option value="@r.IdRol">@r.NombreRol</option>}</InputSelect></div>
+            <div class="col-md-3"><label class="form-label">Odontólogo asociado (solo rol Odontólogo)</label><InputSelect class="form-select" @bind-Value="f.OdontologoId"><option value="@Guid.Empty">—</option>@foreach (var o in odontologos) {<option value="@o.IdOdontologo">@o.Nombre</option>}</InputSelect></div>
+        </div>
+        <div class="mt-3"><button class="btn btn-primary">Guardar</button> <button type="button" class="btn btn-outline-secondary" @onclick="() => f = null">Cancelar</button></div></EditForm>
+}
+<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Correo</th><th>Rol</th><th>Activo</th><th></th></tr></thead><tbody>
+@foreach (var u in lista)
+{
+    <tr><td>@u.Correo</td><td>@u.Rol?.NombreRol</td><td>@(u.Activo ? "Sí" : "No")</td>
+        <td><button class="btn btn-sm btn-outline-primary" @onclick="() => Editar(u)">Editar</button>
+            @if (u.Correo != yo) { <button class="btn btn-sm btn-outline-secondary" @onclick="() => Alternar(u.IdUsuario)">@(u.Activo ? "Desactivar" : "Activar")</button> }</td></tr>
+}
+</tbody></table></div>
+@code {
+    [CascadingParameter] Task<AuthenticationState> Auth { get; set; } = default!;
+    List<Usuario> lista = new(); List<Rol> roles = new(); List<Odontologo> odontologos = new(); UForm? f; string? err, ok, yo;
+    protected override async Task OnInitializedAsync() { yo = (await Auth).User.Identity?.Name; await Cargar(); }
+    async Task Cargar()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        lista = await db.Usuarios.Include(u => u.Rol).OrderBy(u => u.Correo).ToListAsync();
+        roles = await db.Roles.ToListAsync(); odontologos = await db.Odontologos.ToListAsync();
+    }
+    void Nuevo() { err = ok = null; f = new UForm { IdRol = roles.FirstOrDefault()?.IdRol ?? "" }; }
+    void Editar(Usuario u) { err = ok = null; f = new UForm { Id = u.IdUsuario, Correo = u.Correo, IdRol = u.IdRol, OdontologoId = u.OdontologoId ?? Guid.Empty }; }
+    async Task Guardar()
+    {
+        err = ok = null;
+        if (f!.Id == null && string.IsNullOrWhiteSpace(f.Clave)) { err = "Ingrese una contraseña."; return; }
+        if (!string.IsNullOrEmpty(f.Clave) && f.Clave.Length < 8) { err = "La contraseña debe tener al menos 8 caracteres."; return; }
+        await using var db = await F.CreateDbContextAsync();
+        Usuario? u;
+        if (f.Id == null) { u = new Usuario { Correo = f.Correo.Trim().ToLower() }; db.Usuarios.Add(u); }
+        else { u = await db.Usuarios.FindAsync(f.Id.Value); if (u == null) return; }
+        u.IdRol = f.IdRol;
+        u.OdontologoId = (f.IdRol == "ODO" && f.OdontologoId != Guid.Empty) ? f.OdontologoId : null;
+        if (!string.IsNullOrEmpty(f.Clave)) u.ContraseniaHash = BCrypt.Net.BCrypt.HashPassword(f.Clave); // RNF-05
+        try { await db.SaveChangesAsync(); } catch (DbUpdateException) { err = "Ese correo ya está registrado."; return; }
+        f = null; ok = "Usuario guardado."; await Cargar();
+    }
+    async Task Alternar(Guid id)
+    {
+        await using var db = await F.CreateDbContextAsync();
+        var u = await db.Usuarios.FindAsync(id); if (u == null) return; u.Activo = !u.Activo; await db.SaveChangesAsync(); await Cargar();
+    }
+    class UForm
+    {
+        public Guid? Id { get; set; }
+        [Required(ErrorMessage = "Ingrese el correo."), RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", ErrorMessage = "Correo no válido.")] public string Correo { get; set; } = "";
+        public string Clave { get; set; } = "";
+        public string IdRol { get; set; } = "";
+        public Guid OdontologoId { get; set; }
+    }
+}

@@ -1,0 +1,83 @@
+@page "/galeria"
+@inject IWebHostEnvironment Env
+<PageTitle>Galería – ConfiDent</PageTitle>
+<h2>Galería</h2>
+<p class="lead2">Resultados reales que devuelven la confianza y transforman vidas.</p>
+@if (fotos.Count > 0)
+{
+    <div class="tabs-p" role="tablist" aria-label="Filtrar por tratamiento">
+        <button type="button" role="tab" class="@(cat == null ? "on" : "")" aria-selected="@(cat == null)" @onclick="() => cat = null">Todos</button>
+        @foreach (var c in Categorias)
+        {
+            var k = c;
+            <button type="button" role="tab" class="@(cat == k ? "on" : "")" aria-selected="@(cat == k)" @onclick="() => cat = k">@k</button>
+        }
+    </div>
+    <div class="gal2">
+        @foreach (var f in Visibles)
+        {
+            var x = f;
+            <figure>
+                <button type="button" class="gal-btn" @onclick="() => Abrir(x)" aria-label="Ampliar: @x.Categoria">
+                    <img src="@x.Url" alt="@x.Categoria, caso @x.Numero" loading="lazy" />
+                </button>
+                <figcaption>@x.Categoria</figcaption>
+            </figure>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">Pronto publicaremos fotografías de nuestros resultados.</div>
+}
+<div class="quote">Cada cambio de sonrisa cuenta una historia de superación y cuidado personal.</div>
+
+@if (abierta != null)
+{
+    <div class="lb" role="dialog" aria-modal="true" aria-label="Imagen ampliada" @onclick="Cerrar">
+        <button type="button" class="lb-x" aria-label="Cerrar" @onclick="Cerrar" @onclick:stopPropagation>✕</button>
+        <button type="button" class="lb-n lb-prev" aria-label="Anterior" @onclick="() => Mover(-1)" @onclick:stopPropagation>‹</button>
+        <figure class="lb-fig" @onclick="Nada" @onclick:stopPropagation>
+            <img src="@abierta.Url" alt="@abierta.Categoria, caso @abierta.Numero" />
+            <figcaption>@abierta.Categoria · caso @abierta.Numero</figcaption>
+        </figure>
+        <button type="button" class="lb-n lb-next" aria-label="Siguiente" @onclick="() => Mover(1)" @onclick:stopPropagation>›</button>
+    </div>
+}
+@code {
+    record Foto(string Url, string Categoria, int Numero);
+    List<Foto> fotos = new();
+    string? cat;
+    Foto? abierta;
+    static readonly string[] Ext = { ".jpg", ".jpeg", ".png", ".webp" };
+    static readonly string[] Orden = { "Restauraciones", "Prótesis fijas", "Ortodoncia", "Limpieza dental", "Instalaciones" };
+    static readonly Dictionary<string, string> Prefijos = new()
+    {
+        ["restauraciones"] = "Restauraciones", ["protesis"] = "Prótesis fijas", ["ortodoncia"] = "Ortodoncia", ["limpieza"] = "Limpieza dental"
+    };
+    IEnumerable<string> Categorias => Orden.Where(o => fotos.Any(f => f.Categoria == o));
+    List<Foto> Visibles => fotos.Where(f => cat == null || f.Categoria == cat).ToList();
+    protected override void OnInitialized()
+    {
+        var dir = Env.WebRootFileProvider.GetDirectoryContents("img/galeria");
+        if (!dir.Exists) return;
+        var lista = new List<Foto>();
+        foreach (var f in dir.Where(f => !f.IsDirectory && Ext.Contains(Path.GetExtension(f.Name).ToLower())))
+        {
+            var nombre = Path.GetFileNameWithoutExtension(f.Name).ToLower();
+            var pref = nombre.Split('-', '_')[0];
+            var num = int.TryParse(new string(nombre.Where(char.IsDigit).ToArray()), out var n) ? n : 1;
+            lista.Add(new Foto("img/galeria/" + f.Name, Prefijos.GetValueOrDefault(pref, "Instalaciones"), num));
+        }
+        fotos = lista.OrderBy(f => Array.IndexOf(Orden, f.Categoria)).ThenBy(f => f.Numero).ToList();
+    }
+    void Abrir(Foto f) => abierta = f;
+    void Cerrar() => abierta = null;
+    void Nada() { }
+    void Mover(int d)
+    {
+        var l = Visibles; if (abierta == null || l.Count == 0) return;
+        var i = l.FindIndex(f => f.Url == abierta.Url);
+        abierta = l[(i + d + l.Count) % l.Count];
+    }
+}

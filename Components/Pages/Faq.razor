@@ -1,0 +1,30 @@
+@page "/preguntas-frecuentes"
+<PageTitle>Preguntas frecuentes – ConfiDent</PageTitle>
+<h2>Preguntas frecuentes</h2>
+<p class="lead2">Resolver tus dudas es el primer paso para perder el miedo a la atención dental.</p>
+<div class="searchbox"><input class="form-control" placeholder="Buscar una pregunta…" aria-label="Buscar pregunta" @bind="q" @bind:event="oninput" /></div>
+@if (Ver("¿Cómo solicito una cita?  Entre a “Agendar cita”, llene sus datos, elija el servicio, el odontólogo (o “Cualquiera disponible”), la fecha y la hora. También puede empezar desde “Horarios libres” y tocar el horario que prefiera.")) { <details class="faq"><summary>¿Cómo solicito una cita?</summary><p>Entre a “Agendar cita”, llene sus datos, elija el servicio, el odontólogo (o “Cualquiera disponible”), la fecha y la hora. También puede empezar desde “Horarios libres” y tocar el horario que prefiera.</p></details> }
+@if (Ver("¿Mi cita queda confirmada al enviar el formulario?  No de inmediato. Su solicitud queda registrada con estado “Solicitada” y el personal de la clínica la confirma. Al enviarla puede avisarnos por WhatsApp para agilizar la confirmación.")) { <details class="faq"><summary>¿Mi cita queda confirmada al enviar el formulario?</summary><p>No de inmediato. Su solicitud queda registrada con estado “Solicitada” y el personal de la clínica la confirma. Al enviarla puede avisarnos por WhatsApp para agilizar la confirmación.</p></details> }
+@if (Ver("¿Qué pasa si el horario que elegí ya está ocupado?  El sistema se lo indica y le pide elegir otro horario u otro odontólogo. No se pueden agendar dos citas del mismo odontólogo a la misma hora.")) { <details class="faq"><summary>¿Qué pasa si el horario que elegí ya está ocupado?</summary><p>El sistema se lo indica y le pide elegir otro horario u otro odontólogo. No se pueden agendar dos citas del mismo odontólogo a la misma hora.</p></details> }
+@if (Ver("¿Puedo cambiar o cancelar mi cita?  Puede cancelarla usted mismo en  Consultar mi cita  con su cédula y teléfono. Para reprogramarla, escríbanos por WhatsApp al 8411 1405.")) { <details class="faq"><summary>¿Puedo cambiar o cancelar mi cita?</summary><p>Puede cancelarla usted mismo en <a href="mi-cita">Consultar mi cita</a> con su cédula y teléfono. Para reprogramarla, escríbanos por WhatsApp al 8411 1405.</p></details> }
+@if (Ver("¿Qué días y horas atienden?  De lunes a viernes, de 8:00 a. m. a 5:00 p. m.")) { <details class="faq"><summary>¿Qué días y horas atienden?</summary><p>De lunes a viernes, de 8:00 a. m. a 5:00 p. m.</p></details> }
+@if (Ver("¿Dónde están ubicados?  Puede ver el mapa y cómo llegar en la página de  Contacto .")) { <details class="faq"><summary>¿Dónde están ubicados?</summary><p>Puede ver el mapa y cómo llegar en la página de <a href="contacto">Contacto</a>.</p></details> }
+@if (Ver("¿Qué datos me piden y para qué los usan?  Su nombre, cédula, teléfono y dirección, únicamente para registrar su cita y su atención. Puede leer más en nuestra  política de privacidad .")) { <details class="faq"><summary>¿Qué datos me piden y para qué los usan?</summary><p>Su nombre, cédula, teléfono y dirección, únicamente para registrar su cita y su atención. Puede leer más en nuestra <a href="privacidad">política de privacidad</a>.</p></details> }
+@if (Ver("¿Quién puede ver mi historial clínico?  Solo el personal autorizado de la clínica que necesita esa información para atenderle. Cada consulta al historial queda registrada.")) { <details class="faq"><summary>¿Quién puede ver mi historial clínico?</summary><p>Solo el personal autorizado de la clínica que necesita esa información para atenderle. Cada consulta al historial queda registrada.</p></details> }
+@if (!hay) { <div class="alert alert-info">No encontramos preguntas con “@q”. Escríbanos por <a href="contacto">WhatsApp o correo</a>.</div> }
+<div class="quote">¿Tienes más inquietudes? Estamos aquí para brindarte la orientación transparente que mereces. <a href="contacto">Contáctanos</a>.</div>
+@code {
+    string q = "";
+    static readonly string[] T = {
+        "¿Cómo solicito una cita?  Entre a “Agendar cita”, llene sus datos, elija el servicio, el odontólogo (o “Cualquiera disponible”), la fecha y la hora. También puede empezar desde “Horarios libres” y tocar el horario que prefiera.",
+        "¿Mi cita queda confirmada al enviar el formulario?  No de inmediato. Su solicitud queda registrada con estado “Solicitada” y el personal de la clínica la confirma. Al enviarla puede avisarnos por WhatsApp para agilizar la confirmación.",
+        "¿Qué pasa si el horario que elegí ya está ocupado?  El sistema se lo indica y le pide elegir otro horario u otro odontólogo. No se pueden agendar dos citas del mismo odontólogo a la misma hora.",
+        "¿Puedo cambiar o cancelar mi cita?  Puede cancelarla usted mismo en  Consultar mi cita  con su cédula y teléfono. Para reprogramarla, escríbanos por WhatsApp al 8411 1405.",
+        "¿Qué días y horas atienden?  De lunes a viernes, de 8:00 a. m. a 5:00 p. m.",
+        "¿Dónde están ubicados?  Puede ver el mapa y cómo llegar en la página de  Contacto .",
+        "¿Qué datos me piden y para qué los usan?  Su nombre, cédula, teléfono y dirección, únicamente para registrar su cita y su atención. Puede leer más en nuestra  política de privacidad .",
+        "¿Quién puede ver mi historial clínico?  Solo el personal autorizado de la clínica que necesita esa información para atenderle. Cada consulta al historial queda registrada."
+    };
+    bool hay => T.Any(Ver);
+    bool Ver(string t) => string.IsNullOrWhiteSpace(q) || t.Contains(q, StringComparison.OrdinalIgnoreCase);
+}

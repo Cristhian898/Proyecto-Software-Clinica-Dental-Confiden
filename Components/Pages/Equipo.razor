@@ -1,0 +1,40 @@
+@page "/equipo"
+@using System.Globalization
+@using System.Text
+@inject IDbContextFactory<AppDb> F
+@inject IWebHostEnvironment Env
+<PageTitle>Equipo – ConfiDent</PageTitle>
+<h2>Nuestro equipo</h2>
+<p class="lead2">Manos expertas, atención humana y compromiso absoluto con tu bienestar bucal.</p>
+<div class="row g-3">
+@foreach (var o in lista)
+{
+    <div class="col-sm-6 col-lg-4"><div class="team">@if (Foto(o) is string ft) { <img class="team-photo" src="@ft" alt="Fotografía de @o.Nombre" loading="lazy" /> } else { <div class="avatar">@Ini(o.Nombre)</div> }<h5 class="mb-0">@o.Nombre</h5><div class="text-muted">@o.Especialidad</div>
+        <a class="btn btn-sm btn-outline-primary mt-3" href="cita?od=@o.IdOdontologo">Agendar con este odontólogo</a></div></div>
+}
+@if (lista.Count == 0) { <div class="alert alert-info">Pronto publicaremos a nuestro equipo.</div> }
+</div>
+<div class="quote">Detrás de cada tratamiento exitoso hay un equipo apasionado por ver la transformación de tu sonrisa.</div>
+@code {
+    List<Odontologo> lista = new();
+    static string Slug(string nombre)
+    {
+        var d = nombre.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+        foreach (var ch in d) if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark) sb.Append(ch);
+        var palabras = sb.ToString().ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => w is not ("dr" or "dr." or "dra" or "dra."));
+        return string.Join("-", palabras);
+    }
+    string? Foto(Odontologo o)
+    {
+        var ruta = "img/equipo/" + Slug(o.Nombre) + ".jpg";
+        return Env.WebRootFileProvider.GetFileInfo(ruta).Exists ? ruta : null;
+    }
+    static string Ini(string n) => string.Concat(n.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(w => !w.StartsWith("Dr")).Take(2).Select(w => char.ToUpper(w[0])));
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await F.CreateDbContextAsync();
+        lista = await db.Odontologos.Where(o => o.Disponible).OrderBy(o => o.Nombre).ToListAsync();
+    }
+}
